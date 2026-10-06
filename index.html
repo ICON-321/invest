@@ -87,6 +87,10 @@
       <h1 id="welcomeTitle">Welcome, Investor!<br>Trinidad and Tobago is open for business!</h1>
       <p>Explore the International Waterfront Centre in 3D, enter augmented reality, and tap the information markers to discover investment and business resources.</p>
       <button id="welcomeStart" type="button">Explore the Waterfront</button>
+      <p id="startupHint" style="margin-top:14px;font-size:12px;opacity:.58">
+        If the 3D model cannot load, an error message will appear at the top of the screen.
+      </p>
+
     </div>
   </section>
 
@@ -128,27 +132,13 @@
       box.textContent = 'The 3D experience could not start: ' + ((e.reason && e.reason.message) || e.reason || 'module loading error');
     });
   </script>
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://unpkg.com/three@0.164.1/build/three.module.js"
-    }
-  }
-  </script>
-  <script type="module">
-    import * as THREE from 'https://unpkg.com/three@0.164.1/build/three.module.js';
-    import { OrbitControls } from 'https://unpkg.com/three@0.164.1/examples/jsm/controls/OrbitControls.js';
-    import { ARButton } from 'https://unpkg.com/three@0.164.1/examples/jsm/webxr/ARButton.js';
+<script type="module">
+    import * as THREE from 'https://esm.sh/three@0.164.1';
+    import { OrbitControls } from 'https://esm.sh/three@0.164.1/examples/jsm/controls/OrbitControls.js';
+    import { ARButton } from 'https://esm.sh/three@0.164.1/examples/jsm/webxr/ARButton.js';
 
     const app = document.getElementById('app');
     const status = document.getElementById('status');
-    const welcomeOverlay = document.getElementById('welcomeOverlay');
-    const welcomeStart = document.getElementById('welcomeStart');
-
-    welcomeStart.addEventListener('click', () => {
-      welcomeOverlay.classList.add('hidden');
-      status.textContent = 'Tap a white marker for information. If your phone supports WebXR, choose Enter AR to place the model in your space.';
-    });
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x07111f);
@@ -163,6 +153,11 @@
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.shadowMap.enabled = true;
     app.appendChild(renderer.domElement);
+
+    // If the welcome overlay was already dismissed, confirm that the 3D engine is ready.
+    if (document.getElementById('welcomeOverlay')?.classList.contains('hidden')) {
+      status.textContent = '3D model ready. Tap a white marker for information, or choose Enter AR on a supported Android device.';
+    }
 
     const hemi = new THREE.HemisphereLight(0xdcecff, 0x243040, 2.2);
     scene.add(hemi);
