@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <meta name="theme-color" content="#07111f" />
+  <title>Trinidad International Waterfront Centre — AR Prototype</title>
+  <style>
+    html,body{margin:0;height:100%;overflow:hidden;background:#07111f;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+    #app{width:100%;height:100%}
+    #hud{position:fixed;z-index:10;left:14px;right:14px;top:14px;display:flex;justify-content:space-between;gap:12px;pointer-events:none}
+    .card{background:rgba(3,10,20,.72);backdrop-filter:blur(10px);color:white;padding:10px 12px;border:1px solid rgba(255,255,255,.14);border-radius:14px;max-width:520px}
+    .title{font-weight:700;font-size:15px}.sub{font-size:12px;opacity:.78;margin-top:2px}
+    #status{position:fixed;z-index:10;left:50%;transform:translateX(-50%);bottom:88px;color:white;background:rgba(3,10,20,.72);padding:9px 12px;border-radius:999px;font-size:12px;pointer-events:none}
+    #toolbar{position:fixed;z-index:11;right:14px;bottom:14px;display:flex;gap:8px}
+    button{border:0;border-radius:999px;padding:11px 14px;font-weight:700;background:white;color:#0b1626;box-shadow:0 7px 22px rgba(0,0,0,.28)}
+    button.secondary{background:rgba(255,255,255,.16);color:white;border:1px solid rgba(255,255,255,.22)}
+    #arButtonWrap{position:fixed;z-index:12;left:14px;bottom:14px}
+    canvas{display:block}
+  
+    .hotspot-panel{
+      position:fixed;z-index:30;left:14px;right:14px;bottom:76px;
+      max-width:520px;margin:auto;background:rgba(5,14,26,.94);
+      color:#fff;border:1px solid rgba(255,255,255,.18);
+      border-radius:18px;padding:16px;box-shadow:0 16px 50px rgba(0,0,0,.35);
+      backdrop-filter:blur(12px);display:none;
+    }
+    .hotspot-panel.open{display:block}
+    .hotspot-panel h2{font-size:18px;margin:0 34px 7px 0}
+    .hotspot-panel p{font-size:13px;line-height:1.45;opacity:.84;margin:0 0 13px}
+    .hotspot-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .hotspot-actions a,.hotspot-actions button{
+      display:inline-flex;align-items:center;justify-content:center;text-decoration:none;
+      min-height:42px;padding:0 14px;border-radius:999px;font-weight:700;font-size:13px;
+    }
+    .hotspot-actions a{background:#fff;color:#0b1626}
+    .hotspot-actions button{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.18)}
+    #hotspotClose{
+      position:absolute;right:10px;top:10px;width:36px;height:36px;padding:0;
+      background:transparent;color:white;border:1px solid rgba(255,255,255,.16)
+    }
+
+  
+    .welcome-overlay{
+      position:fixed;z-index:50;inset:0;display:grid;place-items:center;
+      padding:22px;background:rgba(3,10,20,.72);backdrop-filter:blur(10px);
+      transition:opacity .3s ease,visibility .3s ease;
+    }
+    .welcome-overlay.hidden{opacity:0;visibility:hidden;pointer-events:none}
+    .welcome-card{
+      width:min(92vw,560px);box-sizing:border-box;text-align:center;
+      background:rgba(8,22,39,.96);color:#fff;border:1px solid rgba(255,255,255,.18);
+      border-radius:24px;padding:30px 24px 24px;
+      box-shadow:0 22px 70px rgba(0,0,0,.42);
+    }
+    .welcome-kicker{
+      font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+      opacity:.68;margin-bottom:10px;font-weight:700;
+    }
+    .welcome-card h1{
+      margin:0 auto 12px;max-width:470px;font-size:clamp(28px,6vw,44px);
+      line-height:1.04;letter-spacing:-.025em;
+    }
+    .welcome-card p{
+      margin:0 auto 22px;max-width:440px;font-size:14px;line-height:1.55;opacity:.78;
+    }
+    .welcome-card button{
+      min-width:180px;min-height:48px;font-size:14px;
+    }
+
+  </style>
+</head>
+<body>
+
+  <section id="welcomeOverlay" class="welcome-overlay" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
+    <div class="welcome-card">
+      <div class="welcome-kicker">Trinidad &amp; Tobago Investment Experience</div>
+      <h1 id="welcomeTitle">Welcome, Investor!<br>Trinidad and Tobago is open for business!</h1>
+      <p>Explore the International Waterfront Centre in 3D, enter augmented reality, and tap the information markers to discover investment and business resources.</p>
+      <button id="welcomeStart" type="button">Explore the Waterfront</button>
+    </div>
+  </section>
+
+  <div id="app"></div>
+  <div id="hud">
+    <div class="card">
+      <div class="title">International Waterfront Centre — Port of Spain</div>
+      <div class="sub">Concept WebAR prototype • simplified massing model</div>
+    </div>
+  </div>
+  <div id="status">Drag to orbit. Pinch/scroll to zoom. Use AR on a supported phone.</div>
+  <div id="arButtonWrap"></div>
+  <div id="toolbar">
+    <button id="resetBtn" class="secondary">Reset view</button>
+  </div>
+
+
+  <section id="hotspotPanel" class="hotspot-panel" role="dialog" aria-modal="false" aria-labelledby="hotspotTitle">
+    <button id="hotspotClose" aria-label="Close information panel">×</button>
+    <h2 id="hotspotTitle">Information</h2>
+    <p id="hotspotText"></p>
+    <div class="hotspot-actions">
+      <a id="hotspotLink" href="#" target="_blank" rel="noopener noreferrer">Visit website ↗</a>
+      <button id="hotspotDismiss">Continue exploring</button>
+    </div>
+  </section>
+
+  <script type="module">
+    import * as THREE from 'https://unpkg.com/three@0.164.1/build/three.module.js';
+    import { OrbitControls } from 'https://unpkg.com/three@0.164.1/examples/jsm/controls/OrbitControls.js';
+    import { ARButton } from 'https://unpkg.com/three@0.164.1/examples/jsm/webxr/ARButton.js';
+
+    const app = document.getElementById('app');
+    const status = document.getElementById('status');
+    const welcomeOverlay = document.getElementById('welcomeOverlay');
+    const welcomeStart = document.getElementById('welcomeStart');
+
+    welcomeStart.addEventListener('click', () => {
+      welcomeOverlay.classList.add('hidden');
+      status.textContent = 'Tap a white marker for information, or choose Enter AR to place the model in your space.';
+    });
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x07111f);
+
+    const camera = new THREE.PerspectiveCamera(48, innerWidth/innerHeight, 0.01, 100);
+    camera.position.set(4.7, 3.3, 6.3);
+
+    const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.xr.enabled = true;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.shadowMap.enabled = true;
+    app.appendChild(renderer.domElement);
+
+    const hemi = new THREE.HemisphereLight(0xdcecff, 0x243040, 2.2);
+    scene.add(hemi);
+    const sun = new THREE.DirectionalLight(0xffffff, 2.8);
+    sun.position.set(5, 9, 4);
+    sun.castShadow = true;
+    scene.add(sun);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 1.15, 0);
+    controls.enableDamping = true;
+    controls.minDistance = 3.4;
+    controls.maxDistance = 15;
+
+    function mat(color, metalness=0.1, roughness=0.55, opacity=1) {
+      return new THREE.MeshStandardMaterial({color, metalness, roughness, transparent:opacity<1, opacity});
+    }
+    const glass = new THREE.MeshStandardMaterial({
+      color:0x4d8fb8, metalness:0.28, roughness:0.18, transparent:true, opacity:0.82
+    });
+    const mullion = mat(0xc8d3db, 0.7, 0.28);
+    const concrete = mat(0xd9dde2, 0.05, 0.72);
+    const dark = mat(0x26313c, 0.4, 0.4);
+    const waterMat = new THREE.MeshStandardMaterial({color:0x15637a, metalness:0.05, roughness:0.22, transparent:true, opacity:.78});
+    const green = mat(0x416f48, 0.0, 0.95);
+
+    const complex = new THREE.Group();
+    complex.scale.setScalar(0.78);
+    scene.add(complex);
+
+    // ---------- Version 2: clickable information hotspots ----------
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    const hotspotTargets = [];
+
+    const hotspotPanel = document.getElementById('hotspotPanel');
+    const hotspotTitle = document.getElementById('hotspotTitle');
+    const hotspotText = document.getElementById('hotspotText');
+    const hotspotLink = document.getElementById('hotspotLink');
+
+    function closeHotspotPanel(){
+      hotspotPanel.classList.remove('open');
+    }
+    document.getElementById('hotspotClose').addEventListener('click', closeHotspotPanel);
+    document.getElementById('hotspotDismiss').addEventListener('click', closeHotspotPanel);
+
+    function openHotspotPanel(data){
+      hotspotTitle.textContent = data.title;
+      hotspotText.textContent = data.description;
+      hotspotLink.href = data.url;
+      hotspotLink.setAttribute('aria-label', `Visit ${data.title} website`);
+      hotspotPanel.classList.add('open');
+    }
+
+    function createHotspot({x,y,z,title,description,url,label}){
+      const group = new THREE.Group();
+      group.position.set(x,y,z);
+
+      const hit = new THREE.Mesh(
+        new THREE.SphereGeometry(0.17,20,16),
+        new THREE.MeshBasicMaterial({transparent:true,opacity:0.01,depthWrite:false})
+      );
+      hit.userData.hotspot = {title,description,url};
+      hotspotTargets.push(hit);
+      group.add(hit);
+
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(0.105,0.018,12,32),
+        new THREE.MeshBasicMaterial({color:0xffffff})
+      );
+      ring.rotation.x = Math.PI/2;
+      group.add(ring);
+
+      const dot = new THREE.Mesh(
+        new THREE.SphereGeometry(0.045,20,16),
+        new THREE.MeshBasicMaterial({color:0xffffff})
+      );
+      group.add(dot);
+
+      const stem = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.009,0.009,0.24,10),
+        new THREE.MeshBasicMaterial({color:0xffffff})
+      );
+      stem.position.y = -0.15;
+      group.add(stem);
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = 'rgba(5,14,26,.90)';
+      ctx.beginPath();
+      ctx.roundRect(8,8,496,112,28);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = '600 34px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label,256,64);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true}));
+      sprite.scale.set(0.95,0.235,1);
+      sprite.position.set(0,0.24,0);
+      group.add(sprite);
+
+      complex.add(group);
+      return group;
+    }
+
+    createHotspot({
+      x:-1.34, y:3.98, z:-0.18,
+      label:'Ministry',
+      title:'Ministry of Trade, Investment & Tourism',
+      description:'Explore the Ministry’s trade, investment, business development, tourism and public service resources.',
+      url:'https://tradeind.gov.tt/'
+    });
+
+    createHotspot({
+      x:1.34, y:4.15, z:-0.18,
+      label:'GlobalTT',
+      title:'Global Trinidad and Tobago',
+      description:'Discover investment opportunities, export services and information for doing business in Trinidad and Tobago.',
+      url:'https://globaltrinidadandtobago.com/'
+    });
+
+    function pickHotspot(clientX,clientY){
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((clientX-rect.left)/rect.width)*2-1;
+      pointer.y = -((clientY-rect.top)/rect.height)*2+1;
+      raycaster.setFromCamera(pointer,camera);
+      const hits = raycaster.intersectObjects(hotspotTargets,false);
+      if(hits.length){
+        openHotspotPanel(hits[0].object.userData.hotspot);
+        return true;
+      }
+      return false;
+    }
+
+    // Waterfront podium / plaza
+    const podium = new THREE.Mesh(new THREE.BoxGeometry(6.6, 0.22, 3.6), concrete);
+    podium.position.y = 0.11;
+    podium.receiveShadow = true;
+    complex.add(podium);
+
+    const promenade = new THREE.Mesh(new THREE.BoxGeometry(6.9, 0.05, 0.65), mat(0xb8b7ae,0,0.95));
+    promenade.position.set(0, 0.18, 2.05);
+    complex.add(promenade);
+
+    const water = new THREE.Mesh(new THREE.PlaneGeometry(9, 4.0), waterMat);
+    water.rotation.x = -Math.PI/2;
+    water.position.set(0, 0.02, 4.1);
+    complex.add(water);
+
+    function addTower(x, z, height, width=1.08, depth=1.18) {
+      const g = new THREE.Group();
+      const body = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), glass);
+      body.position.y = height/2 + 0.22;
+      body.castShadow = true;
+      g.add(body);
+
+      // pale vertical corner fins
+      for (const sx of [-1,1]) {
+        const fin = new THREE.Mesh(new THREE.BoxGeometry(0.055, height*0.99, depth+0.045), mullion);
+        fin.position.set(sx*(width/2+0.025), height/2+0.22, 0);
+        g.add(fin);
+      }
+
+      // horizontal floor bands — visual shorthand, not literal floor count
+      for (let y=0.45; y<height+0.15; y+=0.22) {
+        const band = new THREE.Mesh(new THREE.BoxGeometry(width+0.07, 0.018, depth+0.07), mullion);
+        band.position.y = y;
+        g.add(band);
+      }
+
+      const crown = new THREE.Mesh(new THREE.BoxGeometry(width*0.78, 0.18, depth*0.72), dark);
+      crown.position.y = height + 0.30;
+      g.add(crown);
+
+      g.position.set(x,0,z);
+      complex.add(g);
+      return g;
+    }
+
+    // Approximate relative heights of Tower C and D
+    addTower(-1.34, -0.18, 3.45, 1.05, 1.10);
+    addTower( 1.34, -0.18, 3.62, 1.05, 1.10);
+
+    // Hyatt / conference mass: simplified long, lower waterfront block
+    const hotel = new THREE.Group();
+    const hotelBody = new THREE.Mesh(new THREE.BoxGeometry(2.15, 1.76, 1.02), glass);
+    hotelBody.position.y = 1.10;
+    hotelBody.castShadow = true;
+    hotel.add(hotelBody);
+
+    for (let y=0.43; y<1.95; y+=0.16) {
+      const band = new THREE.Mesh(new THREE.BoxGeometry(2.20, 0.014, 1.05), mullion);
+      band.position.y = y;
+      hotel.add(band);
+    }
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(1.5, .10, .75), dark);
+    roof.position.y = 2.04;
+    hotel.add(roof);
+    hotel.position.set(0,0,0.52);
+    complex.add(hotel);
+
+    // connector / conference podium
+    const connector = new THREE.Mesh(new THREE.BoxGeometry(4.2,.38,1.32), concrete);
+    connector.position.set(0,.39,0.28);
+    complex.add(connector);
+
+    // small lawn/planter strips
+    for (const x of [-2.55,-1.9,1.9,2.55]) {
+      const planter = new THREE.Mesh(new THREE.BoxGeometry(.42,.10,.75), green);
+      planter.position.set(x,.28,1.34);
+      complex.add(planter);
+    }
+
+    // subtle ground shadow plate for non-AR viewer
+    const ground = new THREE.Mesh(new THREE.CircleGeometry(5.3,64), new THREE.ShadowMaterial({opacity:.25}));
+    ground.rotation.x = -Math.PI/2;
+    ground.position.y = -0.01;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    // AR placement
+    const reticle = new THREE.Mesh(
+      new THREE.RingGeometry(0.12,0.15,32).rotateX(-Math.PI/2),
+      new THREE.MeshBasicMaterial({color:0xffffff})
+    );
+    reticle.matrixAutoUpdate = false;
+    reticle.visible = false;
+    scene.add(reticle);
+
+    let hitTestSource = null;
+    let hitTestSourceRequested = false;
+    let placed = false;
+    const originalParent = complex.parent;
+
+    renderer.xr.addEventListener('sessionstart', () => {
+      scene.background = null;
+      controls.enabled = false;
+      complex.visible = false;
+      ground.visible = false;
+      placed = false;
+      closeHotspotPanel();
+      status.textContent = 'Move your phone slowly to find a surface, then tap to place the waterfront model.';
+    });
+    renderer.xr.addEventListener('sessionend', () => {
+      scene.background = new THREE.Color(0x07111f);
+      controls.enabled = true;
+      complex.visible = true;
+      ground.visible = true;
+      complex.position.set(0,0,0);
+      complex.rotation.set(0,0,0);
+      complex.scale.setScalar(.78);
+      hitTestSource = null;
+      hitTestSourceRequested = false;
+      reticle.visible = false;
+      closeHotspotPanel();
+      status.textContent = 'Drag to orbit. Tap a white marker for information. Use AR on a supported phone.';
+    });
+
+    const arButton = ARButton.createButton(renderer, {
+      requiredFeatures:['hit-test'],
+      optionalFeatures:['dom-overlay'],
+      domOverlay:{root:document.body}
+    });
+    arButton.style.position = 'static';
+    arButton.style.margin = '0';
+    arButton.style.borderRadius = '999px';
+    arButton.style.padding = '11px 16px';
+    arButton.style.fontWeight = '700';
+    arButton.textContent = 'ENTER AR';
+    document.getElementById('arButtonWrap').appendChild(arButton);
+
+    renderer.domElement.addEventListener('click', (event) => {
+      if (complex.visible && pickHotspot(event.clientX,event.clientY)) return;
+
+      if (renderer.xr.isPresenting && reticle.visible) {
+        closeHotspotPanel();
+        complex.visible = true;
+        complex.position.setFromMatrixPosition(reticle.matrix);
+        complex.quaternion.setFromRotationMatrix(reticle.matrix);
+        complex.rotation.x = 0;
+        complex.rotation.z = 0;
+        complex.scale.setScalar(.34);
+        placed = true;
+        status.textContent = 'Model placed. Tap a white information marker to learn more.';
+      }
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      if (renderer.xr.isPresenting) return;
+      camera.position.set(4.7,3.3,6.3);
+      controls.target.set(0,1.15,0);
+      controls.update();
+    });
+
+    function animate(_, frame) {
+      if (renderer.xr.isPresenting && frame) {
+        const session = renderer.xr.getSession();
+        if (!hitTestSourceRequested) {
+          session.requestReferenceSpace('viewer').then(refSpace => {
+            session.requestHitTestSource({space:refSpace}).then(source => hitTestSource = source);
+          });
+          session.addEventListener('end', () => {
+            hitTestSourceRequested = false;
+            hitTestSource = null;
+          });
+          hitTestSourceRequested = true;
+        }
+
+        if (hitTestSource && !placed) {
+          const referenceSpace = renderer.xr.getReferenceSpace();
+          const hits = frame.getHitTestResults(hitTestSource);
+          if (hits.length) {
+            const pose = hits[0].getPose(referenceSpace);
+            reticle.visible = true;
+            reticle.matrix.fromArray(pose.transform.matrix);
+          } else {
+            reticle.visible = false;
+          }
+        } else if (placed) {
+          reticle.visible = false;
+        }
+      } else {
+        controls.update();
+      }
+      renderer.render(scene,camera);
+    }
+    renderer.setAnimationLoop(animate);
+
+    addEventListener('resize', () => {
+      camera.aspect = innerWidth/innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth,innerHeight);
+    });
+  </script>
+</body>
+</html>
