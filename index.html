@@ -135,7 +135,7 @@
   <div id="hud">
     <div class="card">
       <div class="title">International Waterfront Centre — Port of Spain</div>
-      <div class="sub">Reference-based WebAR prototype • revised waterfront silhouette</div>
+      <div class="sub">Version 4 • reference-based waterfront reconstruction</div>
     </div>
   </div>
   <div id="status">Drag to orbit. Pinch/scroll to zoom. Use AR on a supported phone.</div>
@@ -320,7 +320,7 @@
     }
 
     createHotspot({
-      x:-0.88, y:4.34, z:0.03,
+      x:-0.70, y:4.35, z:0.06,
       label:'Ministry',
       title:'Ministry of Trade, Investment & Tourism',
       description:'Explore the Ministry’s trade, investment, business development, tourism and public service resources.',
@@ -328,7 +328,7 @@
     });
 
     createHotspot({
-      x:0.55, y:4.88, z:0.03,
+      x:0.73, y:4.76, z:0.10,
       label:'GlobalTT',
       title:'Global Trinidad and Tobago',
       description:'Discover investment opportunities, export services and information for doing business in Trinidad and Tobago.',
@@ -348,390 +348,147 @@
       return false;
     }
 
-
     // ---------------------------------------------------------------------
-    // Version 3 — waterfront massing revised from the user-supplied reference
+    // Version 4 — clean waterfront model rebuilt from multiple references
     // ---------------------------------------------------------------------
+    // The proportions below are a visual reconstruction, not survey/BIM data.
 
-    const glassDark = new THREE.MeshStandardMaterial({
-      color:0x244d63, metalness:0.28, roughness:0.20, transparent:true, opacity:0.92
+    const glassBlue = new THREE.MeshStandardMaterial({
+      color:0x2e7188, metalness:0.26, roughness:0.20, transparent:true, opacity:0.90
     });
-    const glassMid = new THREE.MeshStandardMaterial({
-      color:0x4d7387, metalness:0.24, roughness:0.20, transparent:true, opacity:0.88
+    const glassDeep = new THREE.MeshStandardMaterial({
+      color:0x22566e, metalness:0.28, roughness:0.18, transparent:true, opacity:0.92
     });
-    const gold = mat(0xb98628, 0.48, 0.32);
-    const warmConcrete = mat(0xa88055, 0.08, 0.74);
-    const lightConcrete = mat(0xd7d0c2, 0.04, 0.82);
-    const blackTrim = mat(0x161c22, 0.55, 0.32);
+    const ivory = mat(0xd6d0bf,0.08,0.72);
+    const warmEdge = mat(0xb99761,0.18,0.58);
+    const frameDark = mat(0x25323b,0.38,0.40);
+    const plazaMat = mat(0xc9c4b8,0.02,0.88);
 
-    // Waterfront base and promenade
-    const podium = new THREE.Mesh(new THREE.BoxGeometry(7.3, 0.20, 2.8), warmConcrete);
-    podium.position.set(0,0.10,0.28);
-    podium.receiveShadow = true;
-    complex.add(podium);
+    // Waterfront podium and promenade
+    const waterfrontBase = new THREE.Mesh(new THREE.BoxGeometry(7.0,0.18,2.75), plazaMat);
+    waterfrontBase.position.set(-0.12,0.09,0.34);
+    waterfrontBase.receiveShadow = true;
+    complex.add(waterfrontBase);
 
-    const promenade = new THREE.Mesh(new THREE.BoxGeometry(7.6,0.06,0.54), lightConcrete);
-    promenade.position.set(0,0.19,1.88);
+    const promenade = new THREE.Mesh(new THREE.BoxGeometry(7.45,0.055,0.62), ivory);
+    promenade.position.set(-0.05,0.19,1.87);
     complex.add(promenade);
 
-    const water = new THREE.Mesh(new THREE.PlaneGeometry(9.5,4.5), waterMat);
+    const water = new THREE.Mesh(new THREE.PlaneGeometry(9.2,4.2), waterMat);
     water.rotation.x = -Math.PI/2;
     water.position.set(0,0.01,4.0);
     complex.add(water);
 
-    function horizontalBands(group, width, depth, y0, y1, step, material, extra=0.04){
+    function addFloorBands(group,width,depth,y0,y1,step,material){
       for(let y=y0;y<y1;y+=step){
-        const band = new THREE.Mesh(
-          new THREE.BoxGeometry(width+extra,0.018,depth+extra),
-          material
-        );
-        band.position.y = y;
-        group.add(band);
+        const b=new THREE.Mesh(new THREE.BoxGeometry(width+0.025,0.015,depth+0.025),material);
+        b.position.y=y;
+        group.add(b);
       }
     }
 
-    // LEFT: long Hyatt-like hotel block visible in the reference
+    // Hyatt Regency Trinidad — long rectangular hotel block on the left.
     const hotel = new THREE.Group();
-    const hotelBody = new THREE.Mesh(new THREE.BoxGeometry(1.55,2.62,0.88), glassMid);
-    hotelBody.position.y = 1.52;
-    hotelBody.castShadow = true;
+    const hotelBody = new THREE.Mesh(new THREE.BoxGeometry(1.68,2.75,0.94), glassBlue);
+    hotelBody.position.y=1.55;
+    hotelBody.castShadow=true;
     hotel.add(hotelBody);
+    addFloorBands(hotel,1.68,0.94,0.35,2.83,0.13,ivory);
 
-    // warm side frame and roof cap
-    const hotelLeft = new THREE.Mesh(new THREE.BoxGeometry(0.13,2.75,0.94), gold);
-    hotelLeft.position.set(-0.78,1.52,0);
-    hotel.add(hotelLeft);
-    const hotelTop = new THREE.Mesh(new THREE.BoxGeometry(1.70,0.12,0.96), gold);
-    hotelTop.position.y = 2.90;
-    hotel.add(hotelTop);
-    horizontalBands(hotel,1.55,0.88,0.38,2.77,0.13,lightConcrete,0.015);
-    hotel.position.set(-2.55,0,0.34);
+    const hotelLeftPier=new THREE.Mesh(new THREE.BoxGeometry(0.105,2.78,1.0),ivory);
+    hotelLeftPier.position.set(-0.89,1.55,0);
+    hotel.add(hotelLeftPier);
+    const hotelRightPier=new THREE.Mesh(new THREE.BoxGeometry(0.105,2.78,1.0),ivory);
+    hotelRightPier.position.set(0.89,1.55,0);
+    hotel.add(hotelRightPier);
+    const hotelCanopy=new THREE.Mesh(new THREE.BoxGeometry(1.94,0.12,1.12),warmEdge);
+    hotelCanopy.position.set(0,2.99,0.01);
+    hotel.add(hotelCanopy);
+    hotel.position.set(-2.28,0,0.22);
     complex.add(hotel);
 
-    // CENTRAL LEFT: narrower rectilinear tower
+    // Tower C — narrower central office tower.
     const towerC = new THREE.Group();
-    const cBody = new THREE.Mesh(new THREE.BoxGeometry(1.02,3.82,0.98), glassDark);
-    cBody.position.y = 2.11;
-    cBody.castShadow = true;
+    const cBody=new THREE.Mesh(new THREE.BoxGeometry(1.03,3.82,0.98),glassDeep);
+    cBody.position.y=2.10;
+    cBody.castShadow=true;
     towerC.add(cBody);
-
-    const cLeftFin = new THREE.Mesh(new THREE.BoxGeometry(0.12,3.88,1.04), gold);
-    cLeftFin.position.set(-0.56,2.11,0);
-    towerC.add(cLeftFin);
-    const cRightFin = new THREE.Mesh(new THREE.BoxGeometry(0.08,3.86,1.02), warmConcrete);
-    cRightFin.position.set(0.55,2.11,0);
-    towerC.add(cRightFin);
-    const cCap = new THREE.Mesh(new THREE.BoxGeometry(0.86,0.16,0.86), gold);
-    cCap.position.set(-0.06,4.10,0);
-    towerC.add(cCap);
-    horizontalBands(towerC,1.02,0.98,0.42,3.98,0.17,lightConcrete,0.012);
-    towerC.position.set(-0.88,0,0.03);
+    addFloorBands(towerC,1.03,0.98,0.38,3.95,0.16,ivory);
+    for(const x of [-0.56,0.56]){
+      const pier=new THREE.Mesh(new THREE.BoxGeometry(0.09,3.92,1.04),ivory);
+      pier.position.set(x,2.10,0);
+      towerC.add(pier);
+    }
+    const cCrown=new THREE.Mesh(new THREE.BoxGeometry(1.18,0.16,1.04),warmEdge);
+    cCrown.position.y=4.10;
+    towerC.add(cCrown);
+    towerC.position.set(-0.70,0,0.06);
     complex.add(towerC);
 
-    // CENTRAL RIGHT: taller curved glass tower with warm vertical side blade.
+    // Tower D — broader tower with a curved waterfront facade.
     const towerD = new THREE.Group();
+    const dRear=new THREE.Mesh(new THREE.BoxGeometry(1.18,4.22,0.82),glassDeep);
+    dRear.position.set(-0.10,2.30,-0.18);
+    dRear.castShadow=true;
+    towerD.add(dRear);
 
-    // Curved facade approximated by a shallow cylinder segment plus rear body.
-    const curvedGeo = new THREE.CylinderGeometry(0.74,0.74,4.38,48,1,false,-0.95,1.90);
-    const curvedBody = new THREE.Mesh(curvedGeo, glassDark);
-    curvedBody.rotation.y = Math.PI;
-    curvedBody.position.set(0,2.39,0.05);
-    curvedBody.castShadow = true;
-    towerD.add(curvedBody);
+    // Shallow half-cylinder gives the front facade its distinctive curve.
+    const dCurveGeo=new THREE.CylinderGeometry(0.76,0.76,4.22,48,1,false,-1.03,2.06);
+    const dCurve=new THREE.Mesh(dCurveGeo,glassBlue);
+    dCurve.rotation.y=Math.PI;
+    dCurve.position.set(0.13,2.30,0.12);
+    dCurve.castShadow=true;
+    towerD.add(dCurve);
 
-    const rearBody = new THREE.Mesh(new THREE.BoxGeometry(1.02,4.32,0.74), glassDark);
-    rearBody.position.set(-0.17,2.36,-0.18);
-    towerD.add(rearBody);
-
-    const dSideBlade = new THREE.Mesh(new THREE.BoxGeometry(0.16,4.42,0.88), gold);
-    dSideBlade.position.set(0.62,2.39,-0.02);
-    towerD.add(dSideBlade);
-
-    const dRoof = new THREE.Mesh(new THREE.BoxGeometry(0.96,0.18,0.78), gold);
-    dRoof.position.set(0.08,4.66,-0.04);
-    towerD.add(dRoof);
-
-    // floor lines along the tall tower
-    for(let y=0.46;y<4.52;y+=0.17){
-      const band = new THREE.Mesh(
-        new THREE.BoxGeometry(1.22,0.016,0.76),
-        lightConcrete
-      );
-      band.position.set(-0.05,y,-0.09);
-      towerD.add(band);
-    }
-    towerD.position.set(0.55,0,0.00);
+    const dWarmBlade=new THREE.Mesh(new THREE.BoxGeometry(0.13,4.31,0.98),warmEdge);
+    dWarmBlade.position.set(0.70,2.30,-0.02);
+    towerD.add(dWarmBlade);
+    const dLeftPier=new THREE.Mesh(new THREE.BoxGeometry(0.08,4.25,0.90),ivory);
+    dLeftPier.position.set(-0.69,2.30,-0.08);
+    towerD.add(dLeftPier);
+    const dCrown=new THREE.Mesh(new THREE.BoxGeometry(1.36,0.16,0.94),warmEdge);
+    dCrown.position.set(0.02,4.50,-0.02);
+    towerD.add(dCrown);
+    addFloorBands(towerD,1.18,0.82,0.38,4.34,0.16,ivory);
+    towerD.position.set(0.73,0,0.03);
     complex.add(towerD);
 
-    // Low shared podium joining the three major waterfront masses.
-    const connector = new THREE.Group();
-    const connBody = new THREE.Mesh(new THREE.BoxGeometry(4.85,0.45,1.05), glassMid);
-    connBody.position.y = 0.46;
-    connector.add(connBody);
-
-    const connTop = new THREE.Mesh(new THREE.BoxGeometry(4.95,0.10,1.10), lightConcrete);
-    connTop.position.y = 0.72;
-    connector.add(connTop);
-
-    // canopy / colonnade rhythm
-    for(let x=-2.25;x<=2.25;x+=0.38){
-      const col = new THREE.Mesh(new THREE.BoxGeometry(0.035,0.36,0.04), lightConcrete);
-      col.position.set(x,0.29,0.55);
-      connector.add(col);
+    // Convention centre / shared low-rise waterfront structure.
+    const convention = new THREE.Group();
+    const convBody=new THREE.Mesh(new THREE.BoxGeometry(3.55,0.50,1.05),glassBlue);
+    convBody.position.y=0.48;
+    convention.add(convBody);
+    const convRoof=new THREE.Mesh(new THREE.BoxGeometry(3.70,0.09,1.14),ivory);
+    convRoof.position.y=0.77;
+    convention.add(convRoof);
+    for(let x=-1.62;x<=1.62;x+=0.32){
+      const col=new THREE.Mesh(new THREE.BoxGeometry(0.028,0.34,0.035),ivory);
+      col.position.set(x,0.30,0.55);
+      convention.add(col);
     }
-    connector.position.set(-0.70,0,0.78);
-    complex.add(connector);
+    convention.position.set(-1.42,0,0.76);
+    complex.add(convention);
 
-    // RIGHT CONTEXT: high-rise visible in the supplied waterfront reference.
-    const rightTower = new THREE.Group();
-    const rtBody = new THREE.Mesh(new THREE.BoxGeometry(0.92,2.88,0.80), glassDark);
-    rtBody.position.y = 1.72;
-    rightTower.add(rtBody);
-    horizontalBands(rightTower,0.92,0.80,0.42,3.04,0.16,lightConcrete,0.012);
-    const rtTop = new THREE.Mesh(new THREE.BoxGeometry(0.98,0.20,0.84), blackTrim);
-    rtTop.position.y = 3.18;
-    rightTower.add(rtTop);
-    rightTower.position.set(2.65,0,-0.04);
-    complex.add(rightTower);
+    // Small service/podium mass at the right base of Tower D.
+    const dPodium=new THREE.Mesh(new THREE.BoxGeometry(1.52,0.58,1.02),ivory);
+    dPodium.position.set(1.82,0.47,0.73);
+    complex.add(dPodium);
 
-    // right-hand lower commercial block/context
-    const rightPodium = new THREE.Mesh(new THREE.BoxGeometry(1.85,0.68,1.00), warmConcrete);
-    rightPodium.position.set(2.55,0.52,0.78);
-    complex.add(rightPodium);
-
-    // warm promenade lighting markers
-    for(let x=-3.1;x<=3.1;x+=0.62){
-      const lampPost = new THREE.Mesh(new THREE.CylinderGeometry(0.012,0.012,0.26,8), blackTrim);
-      lampPost.position.set(x,0.35,1.65);
-      complex.add(lampPost);
-      const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.032,12,10), new THREE.MeshBasicMaterial({color:0xffd68a}));
-      lamp.position.set(x,0.49,1.65);
-      complex.add(lamp);
+    // Promenade lights help the waterfront edge read at dusk/night.
+    for(let x=-3.20;x<=3.15;x+=0.55){
+      const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.010,0.010,0.24,8),frameDark);
+      pole.position.set(x,0.34,1.62);
+      complex.add(pole);
+      const bulb=new THREE.Mesh(new THREE.SphereGeometry(0.025,10,8),new THREE.MeshBasicMaterial({color:0xffd995}));
+      bulb.position.set(x,0.475,1.62);
+      complex.add(bulb);
     }
 
-    // subtle ground shadow plate for non-AR viewer
-    const ground = new THREE.Mesh(new THREE.CircleGeometry(5.6,64), new THREE.ShadowMaterial({opacity:.24}));
-    ground.rotation.x = -Math.PI/2;
-    ground.position.y = -0.01;
-    ground.receiveShadow = true;
-    scene.add(ground);
-
-    // AR placement reticle
-    const reticle = new THREE.Mesh(
-      new THREE.RingGeometry(0.12,0.15,32).rotateX(-Math.PI/2),
-      new THREE.MeshBasicMaterial({color:0xffffff})
-    );
-    reticle.matrixAutoUpdate = false;
-    reticle.visible = false;
-    scene.add(reticle);
-
-    // ---------- Version 2: clickable information hotspots ----------
-    const raycaster = new THREE.Raycaster();
-    const pointer = new THREE.Vector2();
-    const hotspotTargets = [];
-
-    const hotspotPanel = document.getElementById('hotspotPanel');
-    const hotspotTitle = document.getElementById('hotspotTitle');
-    const hotspotText = document.getElementById('hotspotText');
-    const hotspotLink = document.getElementById('hotspotLink');
-
-    function closeHotspotPanel(){
-      hotspotPanel.classList.remove('open');
-    }
-    document.getElementById('hotspotClose').addEventListener('click', closeHotspotPanel);
-    document.getElementById('hotspotDismiss').addEventListener('click', closeHotspotPanel);
-
-    function openHotspotPanel(data){
-      hotspotTitle.textContent = data.title;
-      hotspotText.textContent = data.description;
-      hotspotLink.href = data.url;
-      hotspotLink.setAttribute('aria-label', `Visit ${data.title} website`);
-      hotspotPanel.classList.add('open');
-    }
-
-    function createHotspot({x,y,z,title,description,url,label}){
-      const group = new THREE.Group();
-      group.position.set(x,y,z);
-
-      const hit = new THREE.Mesh(
-        new THREE.SphereGeometry(0.17,20,16),
-        new THREE.MeshBasicMaterial({transparent:true,opacity:0.01,depthWrite:false})
-      );
-      hit.userData.hotspot = {title,description,url};
-      hotspotTargets.push(hit);
-      group.add(hit);
-
-      const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(0.105,0.018,12,32),
-        new THREE.MeshBasicMaterial({color:0xffffff})
-      );
-      ring.rotation.x = Math.PI/2;
-      group.add(ring);
-
-      const dot = new THREE.Mesh(
-        new THREE.SphereGeometry(0.045,20,16),
-        new THREE.MeshBasicMaterial({color:0xffffff})
-      );
-      group.add(dot);
-
-      const stem = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.009,0.009,0.24,10),
-        new THREE.MeshBasicMaterial({color:0xffffff})
-      );
-      stem.position.y = -0.15;
-      group.add(stem);
-
-      const canvas = document.createElement('canvas');
-      canvas.width = 512;
-      canvas.height = 128;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = 'rgba(5,14,26,.90)';
-      ctx.beginPath();
-      if (typeof ctx.roundRect === 'function') {
-        ctx.roundRect(8,8,496,112,28);
-      } else {
-        const x=8,y=8,w=496,h=112,r=28;
-        ctx.moveTo(x+r,y);
-        ctx.lineTo(x+w-r,y);
-        ctx.quadraticCurveTo(x+w,y,x+w,y+r);
-        ctx.lineTo(x+w,y+h-r);
-        ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
-        ctx.lineTo(x+r,y+h);
-        ctx.quadraticCurveTo(x,y+h,x,y+h-r);
-        ctx.lineTo(x,y+r);
-        ctx.quadraticCurveTo(x,y,x+r,y);
-      }
-      ctx.fill();
-      ctx.fillStyle = '#fff';
-      ctx.font = '600 34px system-ui, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(label,256,64);
-
-      const tex = new THREE.CanvasTexture(canvas);
-      tex.colorSpace = THREE.SRGBColorSpace;
-      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true}));
-      sprite.scale.set(0.95,0.235,1);
-      sprite.position.set(0,0.24,0);
-      group.add(sprite);
-
-      complex.add(group);
-      return group;
-    }
-
-    createHotspot({
-      x:-0.88, y:4.34, z:0.03,
-      label:'Ministry',
-      title:'Ministry of Trade, Investment & Tourism',
-      description:'Explore the Ministry’s trade, investment, business development, tourism and public service resources.',
-      url:'https://tradeind.gov.tt/'
-    });
-
-    createHotspot({
-      x:0.55, y:4.88, z:0.03,
-      label:'GlobalTT',
-      title:'Global Trinidad and Tobago',
-      description:'Discover investment opportunities, export services and information for doing business in Trinidad and Tobago.',
-      url:'https://globaltrinidadandtobago.com/'
-    });
-
-    function pickHotspot(clientX,clientY){
-      const rect = renderer.domElement.getBoundingClientRect();
-      pointer.x = ((clientX-rect.left)/rect.width)*2-1;
-      pointer.y = -((clientY-rect.top)/rect.height)*2+1;
-      raycaster.setFromCamera(pointer,camera);
-      const hits = raycaster.intersectObjects(hotspotTargets,false);
-      if(hits.length){
-        openHotspotPanel(hits[0].object.userData.hotspot);
-        return true;
-      }
-      return false;
-    }
-
-    // Waterfront podium / plaza
-    const podium = new THREE.Mesh(new THREE.BoxGeometry(6.6, 0.22, 3.6), concrete);
-    podium.position.y = 0.11;
-    podium.receiveShadow = true;
-    complex.add(podium);
-
-    const promenade = new THREE.Mesh(new THREE.BoxGeometry(6.9, 0.05, 0.65), mat(0xb8b7ae,0,0.95));
-    promenade.position.set(0, 0.18, 2.05);
-    complex.add(promenade);
-
-    const water = new THREE.Mesh(new THREE.PlaneGeometry(9, 4.0), waterMat);
-    water.rotation.x = -Math.PI/2;
-    water.position.set(0, 0.02, 4.1);
-    complex.add(water);
-
-    function addTower(x, z, height, width=1.08, depth=1.18) {
-      const g = new THREE.Group();
-      const body = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), glass);
-      body.position.y = height/2 + 0.22;
-      body.castShadow = true;
-      g.add(body);
-
-      // pale vertical corner fins
-      for (const sx of [-1,1]) {
-        const fin = new THREE.Mesh(new THREE.BoxGeometry(0.055, height*0.99, depth+0.045), mullion);
-        fin.position.set(sx*(width/2+0.025), height/2+0.22, 0);
-        g.add(fin);
-      }
-
-      // horizontal floor bands — visual shorthand, not literal floor count
-      for (let y=0.45; y<height+0.15; y+=0.22) {
-        const band = new THREE.Mesh(new THREE.BoxGeometry(width+0.07, 0.018, depth+0.07), mullion);
-        band.position.y = y;
-        g.add(band);
-      }
-
-      const crown = new THREE.Mesh(new THREE.BoxGeometry(width*0.78, 0.18, depth*0.72), dark);
-      crown.position.y = height + 0.30;
-      g.add(crown);
-
-      g.position.set(x,0,z);
-      complex.add(g);
-      return g;
-    }
-
-    // Approximate relative heights of Tower C and D
-    addTower(-1.34, -0.18, 3.45, 1.05, 1.10);
-    addTower( 1.34, -0.18, 3.62, 1.05, 1.10);
-
-    // Hyatt / conference mass: simplified long, lower waterfront block
-    const hotel = new THREE.Group();
-    const hotelBody = new THREE.Mesh(new THREE.BoxGeometry(2.15, 1.76, 1.02), glass);
-    hotelBody.position.y = 1.10;
-    hotelBody.castShadow = true;
-    hotel.add(hotelBody);
-
-    for (let y=0.43; y<1.95; y+=0.16) {
-      const band = new THREE.Mesh(new THREE.BoxGeometry(2.20, 0.014, 1.05), mullion);
-      band.position.y = y;
-      hotel.add(band);
-    }
-    const roof = new THREE.Mesh(new THREE.BoxGeometry(1.5, .10, .75), dark);
-    roof.position.y = 2.04;
-    hotel.add(roof);
-    hotel.position.set(0,0,0.52);
-    complex.add(hotel);
-
-    // connector / conference podium
-    const connector = new THREE.Mesh(new THREE.BoxGeometry(4.2,.38,1.32), concrete);
-    connector.position.set(0,.39,0.28);
-    complex.add(connector);
-
-    // small lawn/planter strips
-    for (const x of [-2.55,-1.9,1.9,2.55]) {
-      const planter = new THREE.Mesh(new THREE.BoxGeometry(.42,.10,.75), green);
-      planter.position.set(x,.28,1.34);
-      complex.add(planter);
-    }
-
-    // subtle ground shadow plate for non-AR viewer
-    const ground = new THREE.Mesh(new THREE.CircleGeometry(5.3,64), new THREE.ShadowMaterial({opacity:.25}));
-    ground.rotation.x = -Math.PI/2;
-    ground.position.y = -0.01;
-    ground.receiveShadow = true;
+    // Ground shadow in the desktop/non-AR viewer.
+    const ground = new THREE.Mesh(new THREE.CircleGeometry(5.4,64), new THREE.ShadowMaterial({opacity:.23}));
+    ground.rotation.x=-Math.PI/2;
+    ground.position.y=-0.01;
+    ground.receiveShadow=true;
     scene.add(ground);
 
     // AR placement
